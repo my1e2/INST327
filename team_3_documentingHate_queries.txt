@@ -1,0 +1,71 @@
+# Finds details of articles from locations that are associated with more than one article 
+
+USE documenting_hatedb;
+CREATE VIEW article_location_details AS
+SELECT a.Article_id, a.Article_title, l.City, l.State
+FROM 
+    article a
+JOIN 
+    location l ON a.Location_id = l.Location_id
+WHERE 
+    l.Location_id IN (
+        SELECT 
+            Location_id
+        FROM 
+            article
+        GROUP BY 
+            Location_id
+        HAVING 
+            COUNT(Location_id) > 1
+    );
+
+# Counts high frequency keywords
+
+USE documenting_hatedb;
+CREATE VIEW High_Frequency_Keywords AS
+	SELECT K.Keyword, COUNT(AK.Keyword_id) AS Keyword_Count
+	FROM Keyword AS K
+    JOIN Article_Keyword AS AK USING(Keyword_id)
+GROUP BY K.Keyword
+HAVING COUNT(AK.Keyword_id) > 2
+ORDER BY Keyword_COUNT DESC;
+
+# Counts how many times each city comes up in the list of articles
+
+USE documenting_hatedb;
+CREATE VIEW city_article_count AS
+SELECT 
+    l.City AS 'City Name', 
+    l.State AS 'State',
+    COUNT(a.Location_id) AS 'Article Count'
+FROM location l
+JOIN article a ON l.Location_ID = a.Location_id
+GROUP BY l.City, l.State
+ORDER BY COUNT(a.Location_id) DESC;
+
+# Ordered by most recent article written by organization
+
+USE documenting_hatedb;
+CREATE VIEW organization_most_recent_article AS
+SELECT
+    o.Organization_name AS 'Organization',
+    a.Article_date AS 'Article Date'
+FROM documenting_hatedb.article a
+JOIN documenting_hatedb.organization o USING(Organization_id)
+ORDER BY Article_date DESC;
+
+# Summaries of articles related to type of crime
+
+USE documenting_hatedb;
+CREATE VIEW article_crime_type AS
+SELECT
+   k.Keyword,
+   a.Article_title,
+   s.Summary
+FROM Documenting_Hatedb.article a
+JOIN Documenting_Hatedb.article_keyword USING(Article_id)
+JOIN Documenting_Hatedb.keyword k USING(Keyword_id)
+JOIN Documenting_Hatedb.article_summary USING(Article_id)
+JOIN Documenting_Hatedb.summary s USING(Summary_id)
+WHERE k.Keyword = 'stabbing' OR k.Keyword = 'murder' OR k.Keyword = 'attack' OR k.Keyword = 'threats'
+ORDER BY k.Keyword;
